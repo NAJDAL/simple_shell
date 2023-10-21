@@ -1,98 +1,169 @@
 #include "shell.h"
 
 /**
- * clear_info - Initializes an info_t struct by setting its fields to initial values.
- * @info: A pointer to the info_t struct to be initialized.
+ * input_buf - Buffers chained commands for later processing.
+ * @info: Parameter struct.
+ * @buf: Address of buffer.
+ * @len: Address of len var.
  *
- * This function sets the fields of the info_t struct to their initial values. It
- * clears or sets the pointers to NULL, effectively preparing the structure for
- * subsequent use.
- *
- * @param info - The info_t struct to be initialized.
+ * Return: Bytes read.
  */
-void clear_info(info_t *info)
+ssize_t input_buf(info_t *info, char **buf, size_t *len)
 {
-    info->arg = NULL;
-    info->argv = NULL;
-    info->path = NULL;
-    info->argc = 0;
+	ssize_t r = 0;
+	size_t len_p = 0;
+
+	if (!*len) /* If nothing left in the buffer, fill it */
+	{
+		free(*buf);
+		*buf = NULL;
+		signal(SIGINT, sigintHandler);
+#if USE_GETLINE
+		r = getline(buf, &len_p, stdin);
+#else
+		r = _getline(info, buf, &len_p);
+#endif
+		if (r > 0)
+		{
+			if ((*buf)[r - 1] == '\n')
+			{
+				(*buf)[r - 1] = '\0'; /* Remove trailing newline */
+				r--;
+			}
+			info->linecount_flag = 1;
+			remove_comments(*buf);
+			build_history_list(info, *buf, info->histcount++);
+			/* if (_strchr(*buf, ';')) is this a command chain? */
+			{
+				*len = r;
+				info->cmd_buf = buf;
+			}
+		}
+	}
+	return r;
 }
 
 /**
- * set_info - Initializes an info_t struct using command arguments.
- * @info: A pointer to the info_t struct to be initialized.
- * @av: Argument vector (command arguments).
+ * get_input - Gets a line minus the newline character.
+ * @info: Parameter struct.
  *
- * This function initializes the info_t struct based on the provided command
- * arguments and prepares it for use in the shell. It sets the program name
- * (fname), parses and stores the command arguments (argv), and processes
- * alias replacement and variable substitution.
- *
- * @param info - The info_t struct to be initialized.
- * @param av - Argument vector containing command arguments.
+ * Return: Bytes read.
  */
-void set_info(info_t *info, char **av)
+ssize_t get_input(info_t *info)
 {
-    int i = 0;
+	static char *buf; /* The ';' command chain buffer */
+	static size_t i, j, len;
+	ssize_t r = 0;
+	char **buf_p = &(info->arg), *p;
 
-    info->fname = av[0];
-    if (info->arg)
-    {
-        info->argv = strtow(info->arg, " \t");
-        if (!info->argv)
-        {
-            info->argv = malloc(sizeof(char *) * 2);
-            if (info->argv)
-            {
-                info->argv[0] = _strdup(info->arg);
-                info->argv[1] = NULL;
-            }
-        }
-        for (i = 0; info->argv && info->argv[i]; i++)
-            ;
-        info->argc = i;
+	_putchar(BUF_FLUSH);
+	r = input_buf(info, &buf, &len);
+	if (r == -1) /* EOF */
+		return -1;
+	if (len) /* We have commands left in the chain buffer */
+	{
+		j = i; /* Initialize new iterator to the current buffer position */
+		p = buf + i; /* Get pointer for return */
 
-        replace_alias(info);
-        replace_vars(info);
-    }
+		check_chain(info, buf, &j, i, len);
+		while (j < len) /* Iterate to semicolon or end */
+		{
+			if (is_chain(info, buf, &j))
+				break;
+			j++;
+		}
+
+		i = j + 1; /* Increment past nulled ';'' */
+		if (i >= len) /* Reached the end of the buffer? */
+		{
+			i = len = 0; /* Reset position and length */
+			info->cmd_buf_type = CMD_NORM;
+		}
+
+		*buf_p = p; /* Pass back a pointer to the current command position */
+		return _strlen(p); /* Return the length of the current command */
+	}
+
+	*buf_p = buf; /* Otherwise, not a chain, pass back the buffer from _getline() */
+	return r; /* Return the length of the buffer from _getline() */
 }
 
 /**
- * free_info - Frees the fields of an info_t struct.
- * @info: A pointer to the info_t struct whose fields need to be freed.
- * @all: A boolean value (true if freeing all fields, false if partial).
+ * read_buf - Reads a buffer.
+ * @info: Parameter struct.
+ * @buf: Buffer.
+ * @i: Size.
  *
- * This function frees various fields within the info_t struct, depending on
- * the 'all' parameter. When 'all' is set to true, it clears and deallocates
- * memory for fields like 'argv', 'path', 'env', 'history', 'alias', and 'environ'.
- * It also closes the file descriptor associated with 'readfd'. If 'all' is false,
- * it only frees the 'argv' field to release memory allocated for command arguments.
- *
- * @param info - The info_t struct whose fields are to be freed.
- * @param all - A boolean value (true for freeing all fields, false for partial).
+ * Return: r.
  */
-void free_info(info_t *info, int all)
+ssize_t read_buf(info_t *info, char *buf, size_t *i)
 {
-    ffree(info->argv);
-    info->argv = NULL;
-    info->path = NULL;
+	ssize_t r = 0;
 
-    if (all)
-    {
-        if (!info->cmd_buf)
-            free(info->arg);
-        if (info->env)
-            free_list(&(info->env));
-        if (info->history)
-            free_list(&(info->history));
-        if (info->alias)
-            free_list(&(info->alias));
-        ffree(info->environ);
-        info->environ = NULL;
-        bfree((void **)info->cmd_buf);
+	if (*i)
+		return 0;
+	r = read(info->readfd, buf, READ_BUF_SIZE);
+	if (r >= 0)
+		*i = r;
+	return r;
+}
 
-        if (info->readfd > 2)
-            close(info->readfd);
-        _putchar(BUF_FLUSH);
-    }
+/**
+ * _getline - Gets the next line of input from STDIN.
+ * @info: Parameter struct.
+ * @ptr: Address of a pointer to a buffer, preallocated or NULL.
+ * @length: Size of the preallocated ptr buffer if not NULL.
+ *
+ * Return: s.
+ */
+int _getline(info_t *info, char **ptr, size_t *length)
+{
+	static char buf[READ_BUF_SIZE];
+	static size_t i, len;
+	size_t k;
+	ssize_t r = 0, s = 0;
+	char *p = NULL, *new_p = NULL, *c;
+
+	p = *ptr;
+	if (p && length)
+		s = *length;
+	if (i == len)
+		i = len = 0;
+
+	r = read_buf(info, buf, &len);
+	if (r == -1 || (r == 0 && len == 0))
+		return -1;
+
+	c = _strchr(buf + i, '\n');
+	k = c ? 1 + (unsigned int)(c - buf) : len;
+	new_p = _realloc(p, s, s ? s + k : k + 1);
+	if (!new_p) /* MALLOC FAILURE! */
+		return p ? free(p), -1 : -1;
+
+	if (s)
+		_strncat(new_p, buf + i, k - i);
+	else
+		_strncpy(new_p, buf + i, k - i + 1);
+
+	s += k - i;
+	i = k;
+	p = new_p;
+
+	if (length)
+		*length = s;
+	*ptr = p;
+	return s;
+}
+
+/**
+ * sigintHandler - Blocks the Ctrl-C signal.
+ * @sig_num: The signal number.
+ *
+ * Return: void.
+ */
+void sigintHandler(__attribute__((unused))int sig_num)
+{
+	_puts("\n");
+	_puts("$ ");
+	_putchar(BUF_FLUSH);
 }
