@@ -1,37 +1,36 @@
 #include "shell.h"
 
 /**
- * Custom implementation of strlen function.
- * Calculates the length of a string.
+ * _strlen - Calculate the length of a string
+ * @s: The string whose length is to be determined
  *
- * @param s - the string to measure
- * @return - length of the string
+ * Description: This function calculates the length of a given string.
+ *
+ * Return: The integer length of the string
  */
-int custom_strlen(char *s)
+int _strlen(char *s)
 {
-    int length = 0;
+    int i = 0;
 
     if (!s)
-        return 0;
+        return (0);
 
-    while (*s)
-    {
-        length++;
-        s++;
-    }
-
-    return length;
+    while (*s++)
+        i++;
+    return (i);
 }
 
 /**
- * Custom implementation of strcmp function.
- * Performs lexicographic comparison of two strings.
+ * _strcmp - Compare two strings lexicographically
+ * @s1: The first string
+ * @s2: The second string
  *
- * @param s1 - the first string
- * @param s2 - the second string
- * @return - negative if s1 < s2, positive if s1 > s2, zero if s1 == s2
+ * Description: This function performs a lexicographic comparison of two strings.
+ * It returns a negative value if s1 < s2, a positive value if s1 > s2, and 0 if s1 == s2.
+ *
+ * Return: The result of the comparison
  */
-int custom_strcmp(char *s1, char *s2)
+int _strcmp(char *s1, char *s2)
 {
     while (*s1 && *s2)
     {
@@ -40,55 +39,47 @@ int custom_strcmp(char *s1, char *s2)
         s1++;
         s2++;
     }
-
     if (*s1 == *s2)
-        return 0;
+        return (0);
     else
         return (*s1 < *s2 ? -1 : 1);
 }
 
 /**
- * Custom implementation of starts_with function.
- * Checks if one string starts with another.
+ * starts_with - Check if one string starts with another
+ * @haystack: The string to search within
+ * @needle: The substring to find at the beginning of the haystack
  *
- * @param haystack - the string to search
- * @param needle - the substring to find
- * @return - address of the next character in haystack or NULL
+ * Description: This function checks if the 'needle' starts with the 'haystack.'
+ * If it does, it returns the address of the next character in the 'haystack,' or NULL otherwise.
+ *
+ * Return: The address of the next character in the 'haystack,' or NULL if not found
  */
-char *custom_starts_with(const char *haystack, const char *needle)
+char *starts_with(const char *haystack, const char *needle)
 {
     while (*needle)
-    {
         if (*needle++ != *haystack++)
-            return NULL;
-    }
-
-    return (char *)haystack;
+            return (NULL);
+    return ((char *)haystack);
 }
 
 /**
- * Custom implementation of strcat function.
- * Concatenates two strings.
+ * _strcat - Concatenate two strings
+ * @dest: The destination buffer
+ * @src: The source buffer
  *
- * @param dest - the destination buffer
- * @param src - the source buffer
- * @return - pointer to the destination buffer
+ * Description: This function concatenates the 'src' string to the end of the 'dest' string.
+ *
+ * Return: Pointer to the destination buffer
  */
-char *custom_strcat(char *dest, char *src)
+char *_strcat(char *dest, char *src)
 {
-    char *result = dest;
+    char *ret = dest;
 
     while (*dest)
-    {
         dest++;
-    }
-
     while (*src)
-    {
         *dest++ = *src++;
-    }
-
     *dest = *src;
-    
-    return result;
+    return (ret);
 }

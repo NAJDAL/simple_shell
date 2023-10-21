@@ -1,45 +1,65 @@
 #include "shell.h"
 
 /**
- * my_memset - Fill memory with a constant byte.
- * @ptr: Pointer to the memory area.
- * @value: The byte to fill *ptr with.
- * @num: Number of bytes to be filled.
- * 
- * Return: A pointer to the memory area ptr.
+ * _memset - Fills memory with a constant byte.
+ * @s: The pointer to the memory area.
+ * @b: The byte to fill *s with.
+ * @n: The number of bytes to be filled.
+ *
+ * This function takes a pointer to a memory area `s`, a byte value `b`, and the number of bytes `n`,
+ * and fills the memory area `s` with the byte `b` for `n` bytes. It returns a pointer to the memory area `s`.
+
+ * @param s - The pointer to the memory area.
+ * @param b - The byte to fill *s with.
+ * @param n - The number of bytes to be filled.
+ * @return - A pointer to the memory area s.
  */
-char *my_memset(char *ptr, char value, unsigned int num) {
+char *_memset(char *s, char b, unsigned int n)
+{
     unsigned int i;
 
-    for (i = 0; i < num; i++)
-        ptr[i] = value;
-    return ptr;
+    for (i = 0; i < n; i++)
+        s[i] = b;
+    return s;
 }
-
 /**
- * my_free_strings - Free an array of strings.
- * @str_array: Array of strings to be freed.
- */
-void my_free_strings(char **str_array) {
-    char **temp = str_array;
+ * ffree - Frees an array of strings.
+ * @pp: Array of strings.
+ *
+ * This function is used to free an array of strings. It takes a pointer to an array of strings `pp` and
+ * iteratively frees each string and then frees the array itself.
 
-    if (!str_array)
+ * @param pp - Array of strings to be freed.
+ */
+void ffree(char **pp)
+{
+    char **a = pp;
+
+    if (!pp)
         return;
-    while (*str_array)
-        free(*str_array++);
-    free(temp);
+    while (*pp)
+        free(*pp++);
+    free(a);
 }
-
 /**
- * my_realloc - Reallocate a block of memory.
- * @ptr: Pointer to the previously allocated block.
- * @old_size: Size in bytes of the old block.
- * @new_size: Size in bytes of the new block.
- * 
- * Return: A pointer to the reallocated block of memory.
+ * _realloc - Reallocates a block of memory.
+ * @ptr: Pointer to the previous malloc'ated block.
+ * @old_size: Byte size of the previous block.
+ * @new_size: Byte size of the new block.
+ *
+ * This function reallocates a block of memory, allowing for resizing a previously allocated block.
+ * It takes a pointer `ptr` to the previous block, its `old_size`, and the desired `new_size`. The function
+ * returns a pointer to the new block of the specified size, copying the data from the old block to the new one
+ * while also freeing the old block.
+
+ * @param ptr - Pointer to the previous malloc'ated block.
+ * @param old_size - Byte size of the previous block.
+ * @param new_size - Byte size of the new block.
+ * @return - Pointer to the new block of memory, or NULL if allocation fails.
  */
-void *my_realloc(void *ptr, unsigned int old_size, unsigned int new_size) {
-    char *new_ptr;
+void *_realloc(void *ptr, unsigned int old_size, unsigned int new_size)
+{
+    char *p;
 
     if (!ptr)
         return malloc(new_size);
@@ -48,13 +68,13 @@ void *my_realloc(void *ptr, unsigned int old_size, unsigned int new_size) {
     if (new_size == old_size)
         return ptr;
 
-    new_ptr = malloc(new_size);
-    if (!new_ptr)
+    p = malloc(new_size);
+    if (!p)
         return NULL;
 
     old_size = old_size < new_size ? old_size : new_size;
     while (old_size--)
-        new_ptr[old_size] = ((char *)ptr)[old_size];
+        p[old_size] = ((char *)ptr)[old_size];
     free(ptr);
-    return new_ptr;
+    return p;
 }

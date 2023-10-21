@@ -1,16 +1,23 @@
 #include "shell.h"
 
 /**
- * free_and_null - frees a pointer and sets it to NULL
- * @ptr: a pointer to a pointer
+ * bfree - Frees a pointer and sets its address to NULL.
+ * @ptr: Address of the pointer to free.
  *
- * This function frees the memory pointed to by ptr and sets it to NULL.
+ * This function takes a pointer to a pointer and frees the memory
+ * that it points to. After freeing the memory, it sets the pointer
+ * to NULL to avoid any potential dangling references.
+
+ * @param ptr - Address of the pointer to free.
+ * @return - 1 if memory was freed successfully, otherwise 0.
  */
-void free_and_null(void **ptr)
+int bfree(void **ptr)
 {
-    if (ptr != NULL && *ptr != NULL)
+    if (ptr && *ptr)
     {
         free(*ptr);
         *ptr = NULL;
+        return 1;
     }
+    return 0;
 }

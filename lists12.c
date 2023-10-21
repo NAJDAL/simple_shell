@@ -1,97 +1,128 @@
 #include "shell.h"
 
 /**
- * list_length - Determines the length of a linked list.
- * @head: Pointer to the first node.
+ * list_len - Determines the length of a linked list.
+ * @h: Pointer to the first node.
  *
- * Return: The size of the list.
+ * This function counts the number of nodes in the linked list and returns the size.
+ *
+ * @param h - The pointer to the first node of the linked list.
+ * @return - The size of the linked list.
  */
-size_t list_length(const list_t *head)
+size_t list_len(const list_t *h)
 {
-    size_t count = 0;
+    size_t i = 0;
 
-    while (head)
+    while (h)
     {
-        head = head->next;
-        count++;
+        h = h->next;
+        i++;
     }
 
-    return count;
+    return i;
 }
 
 /**
- * list_to_string_array - Converts a linked list of strings to an array of strings.
+ * list_to_strings - Converts a linked list of strings to an array of strings.
  * @head: Pointer to the first node.
  *
- * Return: An array of strings.
+ * This function transforms a linked list of strings into an array of strings.
+ * It allocates memory for the array and the individual string elements.
+
+ * @param head - The pointer to the first node of the linked list.
+ * @return - An array of strings or NULL on failure.
  */
-char **list_to_string_array(list_t *head)
+char **list_to_strings(list_t *head)
 {
-    size_t length = list_length(head);
-    if (!head || length == 0)
+    list_t *node = head;
+    size_t i = list_len(head), j;
+    char **strs;
+    char *str;
+
+    if (!head || !i)
         return NULL;
 
-    char **strings = malloc(sizeof(char *) * (length + 1));
-    if (!strings)
+    strs = malloc(sizeof(char *) * (i + 1));
+
+    if (!strs)
         return NULL;
 
-    size_t i = 0;
-    while (head)
+    for (i = 0; node; node = node->next, i++)
     {
-        strings[i] = duplicate_string(head->str);
-        if (!strings[i])
+        str = malloc(_strlen(node->str) + 1);
+
+        if (!str)
         {
-            for (size_t j = 0; j < i; j++)
-                free(strings[j]);
-            free(strings);
+            for (j = 0; j < i; j++)
+                free(strs[j]);
+            free(strs);
             return NULL;
         }
-        i++;
-        head = head->next;
-    }
-    strings[i] = NULL;
 
-    return strings;
+        str = _strcpy(str, node->str);
+        strs[i] = str;
+    }
+
+    strs[i] = NULL;
+
+    return strs;
 }
 
 /**
- * print_list - Prints all elements of a list_t linked list.
- * @head: Pointer to the first node.
+ * print_list - Prints all elements of a list_t linked list, including their indices.
+ * @h: Pointer to the first node.
  *
- * Return: The size of the list.
- */
-size_t print_list(const list_t *head)
-{
-    size_t count = 0;
+ * This function iterates through the linked list, prints the index, a colon, and the string (str) field
+ * of each node. It also counts and returns the size of the list.
 
-    while (head)
+ * @param h - The pointer to the first node.
+ * @return - The size of the linked list.
+ */
+size_t print_list(const list_t *h)
+{
+    size_t i = 0;
+
+    while (h)
     {
-        _puts(convert_number(head->num, 10, 0));
-        _puts(": ");
-        _puts(head->str ? head->str : "(nil)");
+        _puts(convert_number(h->num, 10, 0));
+        _putchar(':');
+        _putchar(' ');
+        _puts(h->str ? h->str : "(nil)");
         _puts("\n");
-        head = head->next;
-        count++;
+        h = h->next;
+        i++;
     }
 
-    return count;
+    return i;
 }
 
 /**
- * find_node_starts_with - Returns a node whose string starts with the given prefix.
- * @head: Pointer to the list head.
- * @prefix: String to match.
- * @c: The character to match after the prefix (-1 to ignore).
+ * node_starts_with - Returns the node whose string starts with a given prefix and character.
+ * @node: Pointer to the head of the linked list.
+ * @prefix: The string to match at the beginning of a node's string.
+ * @c: The character to match after the prefix, or -1 to ignore it.
  *
- * Return: The matching node or NULL.
+ * This function searches for a node in the linked list whose string starts with the given prefix and,
+ * optionally, matches the character that follows the prefix. It returns the matching node or NULL if
+ * no match is found.
+
+ * @param node - The pointer to the head of the linked list.
+ * @param prefix - The string prefix to match.
+ * @param c - The character to match after the prefix (use -1 to ignore it).
+ * @return - The matching node or NULL.
  */
-list_t *find_node_starts_with(list_t *head, const char *prefix, char c)
+list_t *node_starts_with(list_t *node, char *prefix, char c)
 {
-    while (head)
+    char *p = NULL;
+
+    while (node)
     {
-        if (starts_with(head->str, prefix) && (c == -1 || head->str[_strlen(prefix)] == c))
-            return head;
-        head = head->next;
+        p = starts_with(node->str, prefix);
+
+        if (p && ((c == -1) || (*p == c)))
+            return node;
+
+        node = node->next;
     }
 
     return NULL;
@@ -99,21 +130,27 @@ list_t *find_node_starts_with(list_t *head, const char *prefix, char c)
 
 /**
  * get_node_index - Gets the index of a node in the linked list.
- * @head: Pointer to the list head.
- * @node: Pointer to the node.
+ * @head: Pointer to the head of the linked list.
+ * @node: Pointer to the node for which the index is needed.
  *
- * Return: The index of the node or -1 if not found.
+ * This function determines the index of a specific node in the linked list and returns the index.
+ * If the node is not found, it returns -1.
+
+ * @param head - The pointer to the head of the linked list.
+ * @param node - The pointer to the node for which the index is requested.
+ * @return - The index of the node or -1 if the node is not in the list.
  */
 ssize_t get_node_index(list_t *head, list_t *node)
 {
-    size_t index = 0;
+    size_t i = 0;
 
     while (head)
     {
         if (head == node)
-            return index;
+            return i;
+
         head = head->next;
-        index++;
+        i++;
     }
 
     return -1;

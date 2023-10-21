@@ -1,100 +1,94 @@
 #include "shell.h"
 
 /**
- * Custom implementation of strcpy function.
- * Copies a string from source to destination.
+ * _strcpy - Copy a string
+ * @dest: The destination
+ * @src: The source
  *
- * @param dest - the destination
- * @param src - the source
- * @return - pointer to destination
+ * Description: This function copies the characters from the 'src' string to the 'dest' string.
+ *
+ * Return: Pointer to the destination
  */
-char *custom_strcpy(char *dest, char *src)
+char *_strcpy(char *dest, char *src)
 {
-    int index = 0;
+    int i = 0;
 
     if (dest == src || src == 0)
-        return dest;
-
-    while (src[index])
+        return (dest);
+    while (src[i])
     {
-        dest[index] = src[index];
-        index++;
+        dest[i] = src[i];
+        i++;
     }
-
-    dest[index] = '\0';
-    return dest;
+    dest[i] = 0;
+    return (dest);
 }
 
 /**
- * Custom implementation of strdup function.
- * Duplicates a string.
+ * _strdup - Duplicate a string
+ * @str: The string to duplicate
  *
- * @param str - the string to duplicate
- * @return - pointer to the duplicated string
+ * Description: This function duplicates the input string and returns a new string.
+ *
+ * Return: Pointer to the duplicated string or NULL if allocation fails
  */
-char *custom_strdup(const char *str)
+char *_strdup(const char *str)
 {
     int length = 0;
-    char *duplicate;
+    char *ret;
 
     if (str == NULL)
-        return NULL;
-
+        return (NULL);
     while (*str++)
         length++;
-
-    duplicate = malloc(sizeof(char) * (length + 1));
-
-    if (!duplicate)
-        return NULL;
-
+    ret = malloc(sizeof(char) * (length + 1));
+    if (!ret)
+        return (NULL);
     for (length++; length--;)
-        duplicate[length] = *--str;
-
-    return duplicate;
+        ret[length] = *--str;
+    return (ret);
 }
 
 /**
- * Custom implementation of puts function.
- * Prints an input string to stdout.
+ * _puts - Print a string
+ * @str: The string to be printed
  *
- * @param str - the string to be printed
- * @return - Nothing
+ * Description: This function prints the characters in the input string 'str' to the standard output.
+ *
+ * Return: Nothing
  */
-void custom_puts(char *str)
+void _puts(char *str)
 {
-    int index = 0;
+    int i = 0;
 
     if (!str)
         return;
-
-    while (str[index] != '\0')
+    while (str[i] != '\0')
     {
-        custom_putchar(str[index]);
-        index++;
+        _putchar(str[i]);
+        i++;
     }
 }
 
 /**
- * Custom implementation of putchar function.
- * Writes the character c to stdout.
+ * _putchar - Write a character to stdout
+ * @c: The character to print
  *
- * @param c - The character to print
- * @return - On success 1, on error, -1 is returned, and errno is set appropriately.
+ * Description: This function writes the character 'c' to the standard output (stdout).
+ *
+ * Return: On success, it returns 1. On error, it returns -1, and errno is set appropriately.
  */
-int custom_putchar(char c)
+int _putchar(char c)
 {
-    static int bufferIndex;
-    static char outputBuffer[WRITE_BUF_SIZE];
+    static int i;
+    static char buf[WRITE_BUF_SIZE];
 
-    if (c == BUF_FLUSH || bufferIndex >= WRITE_BUF_SIZE)
+    if (c == BUF_FLUSH || i >= WRITE_BUF_SIZE)
     {
-        write(1, outputBuffer, bufferIndex);
-        bufferIndex = 0;
+        write(1, buf, i);
+        i = 0;
     }
-
     if (c != BUF_FLUSH)
-        outputBuffer[bufferIndex++] = c;
-
-    return 1;
+        buf[i++] = c;
+    return (1);
 }

@@ -1,80 +1,98 @@
 #include "shell.h"
 
 /**
- * _custom_strncpy - Copies a string with a specified length.
- * @destination: The destination string to be copied to.
- * @source: The source string to be copied from.
- * @max_length: The maximum number of characters to copy.
+ * _strncpy - Copies a string up to a specified number of characters.
+ * @dest: The destination string to be copied to.
+ * @src: The source string to be copied from.
+ * @n: The maximum number of characters to copy.
  *
- * Returns: The concatenated string.
+ * This function copies a portion of the source string into the destination string,
+ * up to a specified maximum number of characters (n). If the source string is shorter
+ * than n characters, the rest of the destination is filled with null terminators.
+ *
+ * @param dest - The destination string.
+ * @param src - The source string.
+ * @param n - The maximum number of characters to copy.
+ * @return The concatenated string (dest).
  */
-char *_custom_strncpy(char *destination, char *source, int max_length)
+char *_strncpy(char *dest, char *src, int n)
 {
     int i, j;
-    char *result = destination;
+    char *s = dest;
 
     i = 0;
-    while (source[i] != '\0' && i < max_length - 1) {
-        destination[i] = source[i];
+    while (src[i] != '\0' && i < n - 1)
+    {
+        dest[i] = src[i];
         i++;
     }
-
-    if (i < max_length) {
+    if (i < n)
+    {
         j = i;
-        while (j < max_length) {
-            destination[j] = '\0';
+        while (j < n)
+        {
+            dest[j] = '\0';
             j++;
         }
     }
-    return result;
+    return s;
 }
 
 /**
- * _custom_strncat - Concatenates two strings with a specified length.
- * @destination: The first string.
- * @source: The second string to append.
- * @max_length: The maximum number of bytes to be used.
+ * _strncat - Concatenates two strings, up to a specified maximum number of characters.
+ * @dest: The first string.
+ * @src: The second string to be concatenated.
+ * @n: The maximum number of bytes to be used for concatenation.
  *
- * Returns: The concatenated string.
+ * This function appends a portion of the source string onto the end of the destination
+ * string, up to a specified maximum number of characters (n). If the source string is
+ * shorter than n characters, it is appended entirely, and null terminators are added
+ * to the result if necessary.
+ *
+ * @param dest - The first string.
+ * @param src - The second string to be concatenated.
+ * @param n - The maximum number of characters to concatenate.
+ * @return The concatenated string (dest).
  */
-char *_custom_strncat(char *destination, char *source, int max_length)
+char *_strncat(char *dest, char *src, int n)
 {
     int i, j;
-    char *result = destination;
+    char *s = dest;
 
     i = 0;
     j = 0;
-
-    while (destination[i] != '\0') {
+    while (dest[i] != '\0')
         i++;
-    }
-
-    while (source[j] != '\0' && j < max_length) {
-        destination[i] = source[j];
+    while (src[j] != '\0' && j < n)
+    {
+        dest[i] = src[j];
         i++;
         j++;
     }
-
-    if (j < max_length) {
-        destination[i] = '\0';
-    }
-    return result;
+    if (j < n)
+        dest[i] = '\0';
+    return s;
 }
 
 /**
- * _custom_strchar - Locates a character in a string.
- * @string: The string to be searched.
- * @character: The character to find.
+ * _strchr - Locates a character in a string and returns a pointer to it.
+ * @s: The string to be parsed.
+ * @c: The character to look for.
  *
- * Returns: A pointer to the memory area within the string.
+ * This function searches for the first occurrence of the specified character (c) in
+ * the given string (s). If found, it returns a pointer to the location of the character
+ * in the memory area of the string. If the character is not found, it returns NULL.
+ *
+ * @param s - The string to be searched.
+ * @param c - The character to locate.
+ * @return A pointer to the memory area containing the character (s) or NULL if not found.
  */
-char *_custom_strchar(char *string, char character)
+char *_strchr(char *s, char c)
 {
     do {
-        if (*string == character) {
-            return string;
-        }
-    } while (*string++ != '\0');
+        if (*s == c)
+            return s;
+    } while (*s++ != '\0');
 
     return NULL;
 }

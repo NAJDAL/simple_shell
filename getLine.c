@@ -1,174 +1,98 @@
 #include "shell.h"
 
 /**
- * buffer_input - buffers a chain of commands.
- * @info: Structure containing potential arguments.
- * @buf: Address of the buffer.
- * @len: Address of the length variable.
+ * clear_info - Initializes an info_t struct by setting its fields to initial values.
+ * @info: A pointer to the info_t struct to be initialized.
  *
- * Returns: Bytes read.
+ * This function sets the fields of the info_t struct to their initial values. It
+ * clears or sets the pointers to NULL, effectively preparing the structure for
+ * subsequent use.
+ *
+ * @param info - The info_t struct to be initialized.
  */
-ssize_t buffer_input(info_t *info, char **buf, size_t *len)
+void clear_info(info_t *info)
 {
-    ssize_t bytes_read = 0;
-    size_t length_processed = 0;
+    info->arg = NULL;
+    info->argv = NULL;
+    info->path = NULL;
+    info->argc = 0;
+}
 
-    if (!*len) {
-        free(*buf);
-        *buf = NULL;
-        signal(SIGINT, handle_interrupt);
-#if USE_GETLINE
-        bytes_read = getline(buf, &length_processed, stdin);
-#else
-        bytes_read = custom_getline(info, buf, &length_processed);
-#endif
-        if (bytes_read > 0) {
-            if ((*buf)[bytes_read - 1] == '\n') {
-                (*buf)[bytes_read - 1] = '\0'; /* Remove trailing newline */
-                bytes_read--;
+/**
+ * set_info - Initializes an info_t struct using command arguments.
+ * @info: A pointer to the info_t struct to be initialized.
+ * @av: Argument vector (command arguments).
+ *
+ * This function initializes the info_t struct based on the provided command
+ * arguments and prepares it for use in the shell. It sets the program name
+ * (fname), parses and stores the command arguments (argv), and processes
+ * alias replacement and variable substitution.
+ *
+ * @param info - The info_t struct to be initialized.
+ * @param av - Argument vector containing command arguments.
+ */
+void set_info(info_t *info, char **av)
+{
+    int i = 0;
+
+    info->fname = av[0];
+    if (info->arg)
+    {
+        info->argv = strtow(info->arg, " \t");
+        if (!info->argv)
+        {
+            info->argv = malloc(sizeof(char *) * 2);
+            if (info->argv)
+            {
+                info->argv[0] = _strdup(info->arg);
+                info->argv[1] = NULL;
             }
-            info->line_count_flag = 1;
-            remove_comments(*buf);
-            build_history_list(info, *buf, info->hist_count++);
-            *len = bytes_read;
-            info->cmd_buf = buf;
         }
+        for (i = 0; info->argv && info->argv[i]; i++)
+            ;
+        info->argc = i;
+
+        replace_alias(info);
+        replace_vars(info);
     }
-    return bytes_read;
 }
 
 /**
- * retrieve_input - Gets a line without the newline character.
- * @info: Structure containing potential arguments.
+ * free_info - Frees the fields of an info_t struct.
+ * @info: A pointer to the info_t struct whose fields need to be freed.
+ * @all: A boolean value (true if freeing all fields, false if partial).
  *
- * Returns: Bytes read.
- */
-ssize_t retrieve_input(info_t *info)
-{
-    static char *buf; /* Buffer for command chain */
-    static size_t i, j, len;
-    ssize_t bytes_read = 0;
-    char **buf_p = &(info->arg), *p;
-
-    _putchar(BUF_FLUSH);
-    bytes_read = buffer_input(info, &buf, &len);
-    if (bytes_read == -1) {
-        return -1; /* EOF */
-    }
-    if (len) {
-        j = i; /* Initialize new iterator to the current buffer position */
-        p = buf + i; /* Get pointer for return */
-
-        check_command_chain(info, buf, &j, i, len);
-        while (j < len) {
-            if (is_command_chain(info, buf, &j)) {
-                break;
-            }
-            j++;
-        }
-
-        i = j + 1; /* Increment past nulled ';'' */
-        if (i >= len) { /* Reached the end of the buffer? */
-            i = len = 0; /* Reset position and length */
-            info->cmd_buf_type = CMD_NORM;
-        }
-
-        *buf_p = p; /* Pass back pointer to the current command position */
-        return _strlen(p); /* Return the length of the current command */
-    }
-
-    *buf_p = buf; /* If not a chain, pass back the buffer from custom_getline() */
-    return bytes_read; /* Return the length of the buffer from custom_getline() */
-}
-
-/**
- * read_buffer - Reads a buffer.
- * @info: Structure containing potential arguments.
- * @buffer: Buffer.
- * @i: Size.
+ * This function frees various fields within the info_t struct, depending on
+ * the 'all' parameter. When 'all' is set to true, it clears and deallocates
+ * memory for fields like 'argv', 'path', 'env', 'history', 'alias', and 'environ'.
+ * It also closes the file descriptor associated with 'readfd'. If 'all' is false,
+ * it only frees the 'argv' field to release memory allocated for command arguments.
  *
- * Returns: Bytes read.
+ * @param info - The info_t struct whose fields are to be freed.
+ * @param all - A boolean value (true for freeing all fields, false for partial).
  */
-ssize_t read_buffer(info_t *info, char *buffer, size_t *i)
+void free_info(info_t *info, int all)
 {
-    ssize_t bytes_read = 0;
+    ffree(info->argv);
+    info->argv = NULL;
+    info->path = NULL;
 
-    if (*i) {
-        return 0;
+    if (all)
+    {
+        if (!info->cmd_buf)
+            free(info->arg);
+        if (info->env)
+            free_list(&(info->env));
+        if (info->history)
+            free_list(&(info->history));
+        if (info->alias)
+            free_list(&(info->alias));
+        ffree(info->environ);
+        info->environ = NULL;
+        bfree((void **)info->cmd_buf);
+
+        if (info->readfd > 2)
+            close(info->readfd);
+        _putchar(BUF_FLUSH);
     }
-    bytes_read = read(info->read_fd, buffer, READ_BUFFER_SIZE);
-    if (bytes_read >= 0) {
-        *i = bytes_read;
-    }
-    return bytes_read;
-}
-
-/**
- * custom_getline - Gets the next line of input from STDIN.
- * @info: Structure containing potential arguments.
- * @ptr: Address of a pointer to a buffer, preallocated or NULL.
- * @length: Size of the preallocated buffer if not NULL.
- *
- * Returns: Bytes read.
- */
-int custom_getline(info_t *info, char **ptr, size_t *length)
-{
-    static char buffer[READ_BUFFER_SIZE];
-    static size_t i, len;
-    size_t k;
-    ssize_t bytes_read = 0;
-    int bytes_processed = 0;
-    char *p = NULL, *new_p = NULL, *c;
-
-    p = *ptr;
-    if (p && length) {
-        bytes_processed = *length;
-    }
-    if (i == len) {
-        i = len = 0;
-    }
-
-    bytes_read = read_buffer(info, buffer, &len);
-    if (bytes_read == -1 || (bytes_read == 0 && len == 0)) {
-        return -1;
-    }
-
-    c = custom_strchr(buffer + i, '\n');
-    k = c ? 1 + (unsigned int)(c - buffer) : len;
-    new_p = custom_realloc(p, bytes_processed, bytes_processed ? bytes_processed + k : k + 1);
-    if (!new_p) { /* MALLOC FAILURE! */
-        if (p) {
-            free(p);
-        }
-        return -1;
-    }
-
-    if (bytes_processed) {
-        custom_strncat(new_p, buffer + i, k - i);
-    } else {
-        custom_strncpy(new_p, buffer + i, k - i + 1);
-    }
-
-    bytes_processed += k - i;
-    i = k;
-    p = new_p;
-
-    if (length) {
-        *length = bytes_processed;
-    }
-    *ptr = p;
-    return bytes_processed;
-}
-
-/**
- * handle_interrupt - Blocks Ctrl-C.
- * @signal_number: The signal number.
- *
- * Returns: Void.
- */
-void handle_interrupt(__attribute__((unused)) int signal_number)
-{
-    _puts("\n");
-    _puts("$ ");
-    _putchar(BUF_FLUSH);
 }

@@ -1,14 +1,17 @@
 #include "shell.h"
 
 /**
- * Checks if the current character in the buffer is a chain delimiter.
+ * is_chain - Test if the current character in the buffer is a chain delimiter
+ * @info: The parameter struct
+ * @buf: The character buffer
+ * @p: Address of the current position in buf
  *
- * @param info - the parameter struct
- * @param buf - the character buffer
- * @param p - address of the current position in buf
- * @return - 1 if a chain delimiter, 0 otherwise
+ * Description: This function checks if the current character in the buffer 'buf'
+ * is a chain delimiter, which includes '|', '||', '&&', and ';'.
+ *
+ * Return: 1 if it's a chain delimiter, 0 otherwise
  */
-int isChainDelimiter(info_t *info, char *buf, size_t *p)
+int is_chain(info_t *info, char *buf, size_t *p)
 {
     size_t j = *p;
 
@@ -16,39 +19,45 @@ int isChainDelimiter(info_t *info, char *buf, size_t *p)
     {
         buf[j] = 0;
         j++;
-        info->cmdBufType = CMD_OR;
+        info->cmd_buf_type = CMD_OR;
     }
     else if (buf[j] == '&' && buf[j + 1] == '&')
     {
         buf[j] = 0;
         j++;
-        info->cmdBufType = CMD_AND;
+        info->cmd_buf_type = CMD_AND;
     }
     else if (buf[j] == ';') /* Found the end of this command */
     {
         buf[j] = 0; /* Replace semicolon with null */
-        info->cmdBufType = CMD_CHAIN;
+        info->cmd_buf_type = CMD_CHAIN;
     }
     else
-        return 0;
+        return (0);
     *p = j;
-    return 1;
+    return (1);
 }
 
 /**
- * Checks whether we should continue chaining based on the last status.
+ * check_chain - Check if we should continue chaining based on the last status
+ * @info: The parameter struct
+ * @buf: The character buffer
+ * @p: Address of the current position in buf
+ * @i: Starting position in buf
+ * @len: Length of buf
  *
- * @param info - the parameter struct
- * @param buf - the character buffer
- * @param p - address of the current position in buf
- * @param i - starting position in buf
- * @param len - length of buf
+ * Description: This function checks whether the shell should continue chaining
+ * commands based on the last status. If the last command was '&&' and the status
+ * is non-zero, or if the last command was '||' and the status is zero, it modifies
+ * the buffer to prevent further chaining.
+ *
+ * Return: Void
  */
-void checkChaining(info_t *info, char *buf, size_t *p, size_t i, size_t len)
+void check_chain(info_t *info, char *buf, size_t *p, size_t i, size_t len)
 {
     size_t j = *p;
 
-    if (info->cmdBufType == CMD_AND)
+    if (info->cmd_buf_type == CMD_AND)
     {
         if (info->status)
         {
@@ -56,7 +65,7 @@ void checkChaining(info_t *info, char *buf, size_t *p, size_t i, size_t len)
             j = len;
         }
     }
-    if (info->cmdBufType == CMD_OR)
+    if (info->cmd_buf_type == CMD_OR)
     {
         if (!info->status)
         {
@@ -69,12 +78,15 @@ void checkChaining(info_t *info, char *buf, size_t *p, size_t i, size_t len)
 }
 
 /**
- * Replaces aliases in the tokenized string.
+ * replace_alias - Replace aliases in the tokenized string
+ * @info: The parameter struct
  *
- * @param info - the parameter struct
- * @return - 1 if replaced, 0 otherwise
+ * Description: This function attempts to replace aliases in the tokenized string
+ * with their corresponding values. If a match is found, it updates the argv[0] pointer.
+ *
+ * Return: 1 if replaced, 0 otherwise
  */
-int replaceAliases(info_t *info)
+int replace_alias(info_t *info)
 {
     int i;
     list_t *node;
@@ -82,28 +94,31 @@ int replaceAliases(info_t *info)
 
     for (i = 0; i < 10; i++)
     {
-        node = findNodeWithPrefix(info->alias, info->argv[0], '=');
+        node = node_starts_with(info->alias, info->argv[0], '=');
         if (!node)
-            return 0;
+            return (0);
         free(info->argv[0]);
-        p = strchr(node->str, '=');
+        p = _strchr(node->str, '=');
         if (!p)
-            return 0;
-        p = strdup(p + 1);
+            return (0);
+        p = _strdup(p + 1);
         if (!p)
-            return 0;
+            return (0);
         info->argv[0] = p;
     }
-    return 1;
+    return (1);
 }
 
 /**
- * Replaces variables in the tokenized string.
+ * replace_vars - Replace environment variables in the tokenized string
+ * @info: The parameter struct
  *
- * @param info - the parameter struct
- * @return - 1 if replaced, 0 otherwise
+ * Description: This function attempts to replace environment variables in the tokenized
+ * string with their corresponding values. If a match is found, it updates the argv array.
+ *
+ * Return: 1 if replaced, 0 otherwise
  */
-int replaceVariables(info_t *info)
+int replace_vars(info_t *info)
 {
     int i = 0;
     list_t *node;
@@ -115,35 +130,37 @@ int replaceVariables(info_t *info)
 
         if (!_strcmp(info->argv[i], "$?"))
         {
-            replaceString(&(info->argv[i]), strdup(convertNumber(info->status, 10, 0)));
+            replace_string(&(info->argv[i]), _strdup(convert_number(info->status, 10, 0)));
             continue;
         }
         if (!_strcmp(info->argv[i], "$$"))
         {
-            replaceString(&(info->argv[i]), strdup(convertNumber(getpid(), 10, 0)));
+            replace_string(&(info->argv[i]), _strdup(convert_number(getpid(), 10, 0)));
             continue;
         }
-        node = findNodeWithPrefix(info->env, &info->argv[i][1], '=');
+        node = node_starts_with(info->env, &info->argv[i][1], '=');
         if (node)
         {
-            replaceString(&(info->argv[i]), strdup(strchr(node->str, '=') + 1));
+            replace_string(&(info->argv[i]), _strdup(_strchr(node->str, '=') + 1));
             continue;
         }
-        replaceString(&info->argv[i], strdup(""));
+        replace_string(&info->argv[i], _strdup(""));
     }
-    return 0;
+    return (0);
 }
 
 /**
- * Replaces a string.
+ * replace_string - Replace a string with a new one
+ * @old: Address of the old string
+ * @new: The new string
  *
- * @param old - address of the old string
- * @param new - new string
- * @return - 1 if replaced, 0 otherwise
+ * Description: This function replaces the old string with the new one and frees the old string.
+ *
+ * Return: 1 if replaced, 0 otherwise
  */
-int replaceString(char **old, char *new)
+int replace_string(char **old, char *new)
 {
     free(*old);
     *old = new;
-    return 1;
+    return (1);
 }

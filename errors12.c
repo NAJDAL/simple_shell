@@ -1,98 +1,122 @@
 #include "shell.h"
 
 /**
- * _custom_atoi - Converts a string to an integer.
+ * _erratoi - Converts a string to an integer with error handling.
  * @s: The string to be converted.
  *
- * Returns: The converted number or -1 on error.
+ * This function converts a string to an integer. It checks for valid input
+ * and handles potential errors. If the conversion is successful, it returns
+ * the integer value. If there are errors or the number is out of range, it
+ * returns -1.
+ *
+ * @param s - The string to be converted to an integer.
+ * @return The converted integer value or -1 on error.
  */
-int _custom_atoi(char *s)
+int _erratoi(char *s)
 {
     int i = 0;
     unsigned long int result = 0;
 
     if (*s == '+')
-        s++;
-    for (i = 0; s[i] != '\0'; i++) {
-        if (s[i] >= '0' && s[i] <= '9') {
+        s++;  /* Skip leading plus sign. */
+    for (i = 0; s[i] != '\0'; i++)
+    {
+        if (s[i] >= '0' && s[i] <= '9')
+        {
             result *= 10;
             result += (s[i] - '0');
             if (result > INT_MAX)
-                return -1;
-        } else {
-            return -1;
+                return (-1);  /* Integer out of range. */
         }
+        else
+            return (-1);  /* Invalid character found. */
     }
-    return result;
+    return (result);
 }
 
 /**
- * print_custom_error - Prints an error message.
+ * print_error - Prints an error message with specific formatting.
  * @info: The parameter and return info struct.
- * @customError: String containing a specified error type.
+ * @estr: String containing the specified error type.
  *
- * Returns: Nothing.
+ * This function is used to print an error message to the standard error stream (stderr).
+ * It includes the file name, line number, and the error description provided in the `estr`
+ * parameter. This helps create well-formatted error messages for the user.
+ *
+ * @param info - The parameter and return info struct.
+ * @param estr - The string containing the specified error type.
+ * @return Nothing.
  */
-void print_custom_error(info_t *info, char *customError)
+void print_error(info_t *info, char *estr)
 {
-    _custom_puts(info->fname);
-    _custom_puts(": ");
-    print_custom_d(info->line_count, STDERR_FILENO);
-    _custom_puts(": ");
-    _custom_puts(info->argv[0]);
-    _custom_puts(": ");
-    _custom_puts(customError);
+    _eputs(info->fname);
+    _eputs(": ");
+    print_d(info->line_count, STDERR_FILENO);
+    _eputs(": ");
+    _eputs(info->argv[0]);
+    _eputs(": ");
+    _eputs(estr);
 }
 
 /**
- * print_custom_d - Prints a decimal (integer) number (base 10).
+ * print_d - Prints a decimal (integer) number with specified formatting.
  * @input: The input number.
  * @fd: The file descriptor to write to.
  *
- * Returns: The number of characters printed.
+ * This function prints a decimal (integer) number with specified formatting. It can
+ * handle both positive and negative numbers. It returns the number of characters printed.
+ *
+ * @param input - The input number to print.
+ * @param fd - The file descriptor to write to.
+ * @return The number of characters printed.
  */
-int print_custom_d(int input, int fd)
+int print_d(int input, int fd)
 {
-    int (*custom_putchar)(char) = _custom_putchar;
+    int (*__putchar)(char) = _putchar;
     int i, count = 0;
-    unsigned int absValue, current;
+    unsigned int _abs_, current;
 
     if (fd == STDERR_FILENO)
-        custom_putchar = _custom_putchar;
-
-    if (input < 0) {
-        absValue = -input;
-        custom_putchar('-');
+        __putchar = _eputchar;
+    if (input < 0)
+    {
+        _abs_ = -input;
+        __putchar('-');
         count++;
-    } else {
-        absValue = input;
     }
-
-    current = absValue;
-
-    for (i = 1000000000; i > 1; i /= 10) {
-        if (absValue / i) {
-            custom_putchar('0' + current / i);
+    else
+        _abs_ = input;
+    current = _abs_;
+    for (i = 1000000000; i > 1; i /= 10)
+    {
+        if (_abs_ / i)
+        {
+            __putchar('0' + current / i);
             count++;
         }
         current %= i;
     }
-
-    custom_putchar('0' + current);
+    __putchar('0' + current);
     count++;
 
     return count;
 }
 
 /**
- * custom_convert_number - Converter function, similar to itoa.
+ * convert_number - Converts a number to a string with specified base and flags.
  * @num: The number to convert.
- * @base: The base for conversion.
- * @flags: Argument flags.
+ * @base: The base for the conversion (e.g., 10 for decimal).
+ * @flags: Conversion flags.
  *
- * Returns: The converted string.
+ * This function converts a number to a string with the specified base and flags.
+ * It can handle both signed and unsigned numbers. The result is returned as a string.
+ *
+ * @param num - The number to convert.
+ * @param base - The base for the conversion.
+ * @param flags - Conversion flags (e.g., CONVERT_UNSIGNED for unsigned numbers).
+ * @return The converted number as a string.
  */
-char *custom_convert_number(long int num, int base, int flags)
+char *convert_number(long int num, int base, int flags)
 {
     static char *array;
     static char buffer[50];
@@ -100,12 +124,12 @@ char *custom_convert_number(long int num, int base, int flags)
     char *ptr;
     unsigned long n = num;
 
-    if (!(flags & CUSTOM_CONVERT_UNSIGNED) && num < 0) {
+    if (!(flags & CONVERT_UNSIGNED) && num < 0)
+    {
         n = -num;
         sign = '-';
     }
-
-    array = flags & CUSTOM_CONVERT_LOWERCASE ? "0123456789abcdef" : "0123456789ABCDEF";
+    array = flags & CONVERT_LOWERCASE ? "0123456789abcdef" : "0123456789ABCDEF";
     ptr = &buffer[49];
     *ptr = '\0';
 
@@ -116,22 +140,28 @@ char *custom_convert_number(long int num, int base, int flags)
 
     if (sign)
         *--ptr = sign;
-
     return ptr;
 }
 
 /**
- * custom_remove_comments - Replaces the first instance of '#' with '\0'.
+ * remove_comments - Replaces the first instance of '#' with '\0'.
  * @buf: Address of the string to modify.
  *
- * Returns: Nothing.
+ * This function is used to remove comments from a string by replacing the first
+ * instance of '#' with a null terminator '\0'. It is often used for processing
+ * configuration files or script input.
+ *
+ * @param buf - The address of the string to modify.
+ * @return Nothing.
  */
-void custom_remove_comments(char *buf)
+void remove_comments(char *buf)
 {
     int i;
 
-    for (i = 0; buf[i] != '\0'; i++) {
-        if (buf[i] == '#' && (!i || buf[i - 1] == ' ')) {
+    for (i = 0; buf[i] != '\0'; i++)
+    {
+        if (buf[i] == '#' && (!i || buf[i - 1] == ' '))
+        {
             buf[i] = '\0';
             break;
         }

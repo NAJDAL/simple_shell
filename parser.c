@@ -1,34 +1,104 @@
 #include "shell.h"
 
 /**
- * is_executable - checks if a file is executable
- * @path: path to the file
+ * is_cmd - Determines if a file is an executable command.
+ * @info: The info struct.
+ * @path: Path to the file.
  *
- * Return: 1 if executable, 0 otherwise
+ * This function checks if the given `path` corresponds to an executable command by examining its
+ * file status. If the file is a regular executable file, it returns 1; otherwise, it returns 0.
+
+ * @param info - The info struct (not used in the function).
+ * @param path - Path to the file to check.
+ * @return 1 if the file is an executable command, 0 otherwise.
  */
-int is_executable(char *path)
+int is_cmd(info_t *info, char *path)
 {
     struct stat st;
-    return !stat(path, &st) && S_ISREG(st.st_mode) && (st.st_mode & S_IXUSR);
+
+    (void)info;
+    if (!path || stat(path, &st))
+        return 0;
+
+    if (st.st_mode & S_IFREG)
+    {
+        return 1;
+    }
+    return 0;
 }
 
 /**
- * find_executable - finds the full path of an executable in PATH
- * @pathstr: the PATH string
- * @cmd: the command to find
+ * dup_chars - Duplicates characters from a string.
+ * @pathstr: The PATH string.
+ * @start: Starting index.
+ * @stop: Stopping index.
  *
- * Return: full path to the executable or NULL if not found
+ * This function creates a new buffer and duplicates characters from the `pathstr`
+ * starting from the index `start` up to (but not including) the index `stop`. The
+ * duplicated characters are placed in the buffer, and a pointer to the buffer is returned.
+
+ * @param pathstr - The PATH string.
+ * @param start - Starting index in the string.
+ * @param stop - Stopping index in the string.
+ * @return - Pointer to a new buffer containing the duplicated characters.
  */
-char *find_executable(char *pathstr, char *cmd)
+char *dup_chars(char *pathstr, int start, int stop)
 {
-    char *token = strtok(pathstr, ":");
-    while (token) {
-        char path[MAX_PATH_LEN];
-        snprintf(path, sizeof(path), "%s/%s", token, cmd);
-        if (is_executable(path)) {
-            return strdup(path);  // Remember to free the returned string when done
+    static char buf[1024];
+    int i = 0, k = 0;
+
+    for (k = 0, i = start; i < stop; i++)
+        if (pathstr[i] != ':')
+            buf[k++] = pathstr[i];
+    buf[k] = 0;
+    return buf;
+}
+/**
+ * find_path - Finds the full path of a command in the PATH string.
+ * @info: The info struct.
+ * @pathstr: The PATH string.
+ * @cmd: The command to find.
+ *
+ * This function searches for the `cmd` within the `pathstr`, which contains a list
+ * of directories in the system's PATH. If the command is found in any of these directories,
+ * the function returns the full path to the command. If the command is not found, it returns NULL.
+
+ * @param info - The info struct (not used in the function).
+ * @param pathstr - The PATH string containing directories.
+ * @param cmd - The command to find in the directories.
+ * @return - The full path of the command if found, or NULL if not found.
+ */
+char *find_path(info_t *info, char *pathstr, char *cmd)
+{
+    int i = 0, curr_pos = 0;
+    char *path;
+
+    if (!pathstr)
+        return NULL;
+    if ((_strlen(cmd) > 2) && starts_with(cmd, "./"))
+    {
+        if (is_cmd(info, cmd))
+            return cmd;
+    }
+    while (1)
+    {
+        if (!pathstr[i] || pathstr[i] == ':')
+        {
+            path = dup_chars(pathstr, curr_pos, i);
+            if (!*path)
+                _strcat(path, cmd);
+            else
+            {
+                _strcat(path, "/");
+                _strcat(path, cmd);
+            }
+            if (is_cmd(info, path))
+                return path;
+            if (!pathstr[i])
+                break;
+            curr_pos = i;
         }
-        token = strtok(NULL, ":");
+        i++;
     }
     return NULL;
 }
