@@ -12,12 +12,12 @@
 #include <fcntl.h>
 #include <errno.h>
 
-/* Define read and write buffer sizes */
+/* Constants for read/write buffers */
 #define READ_BUF_SIZE 1024
 #define WRITE_BUF_SIZE 1024
 #define BUF_FLUSH -1
 
-/* Define constants for command chaining */
+/* Constants for command chaining */
 #define CMD_NORM	0
 #define CMD_OR		1
 #define CMD_AND		2
@@ -27,28 +27,28 @@
 #define CONVERT_LOWERCASE	1
 #define CONVERT_UNSIGNED	2
 
-/* Flag for using system getline() */
+/* Flag indicating whether system getline() is used (0 for not using) */
 #define USE_GETLINE 0
 #define USE_STRTOK 0
 
-/* Define history file name and maximum history size */
 #define HIST_FILE	".simple_shell_history"
 #define HIST_MAX	4096
 
 extern char **environ;
 
 /**
- * Define a singly linked list structure for strings
+ * Struct for a singly linked list node.
  */
 typedef struct liststr
 {
-	int num;        // Number field
-	char *str;      // String data
-	struct liststr *next; // Pointer to the next node
+	int num;        /* Number field */
+	char *str;       /* String field */
+	struct liststr *next; /* Pointer to the next node */
 } list_t;
 
 /**
- * Define a structure for passing arguments to functions
+ * Struct containing pseudo-arguments to pass into a function, allowing
+ * a uniform prototype for a function pointer struct.
  */
 typedef struct passinfo
 {
@@ -66,28 +66,27 @@ typedef struct passinfo
 	char **environ;
 	int env_changed;
 	int status;
-	char **cmd_buf; // Pointer to cmd ; chain buffer, for memory management
-	int cmd_buf_type; // Command type (||, &&, ;)
+
+	char **cmd_buf; /* Pointer to cmd ; chain buffer, for memory management */
+	int cmd_buf_type; /* Command type (CMD_NORM, CMD_OR, CMD_AND, CMD_CHAIN) */
 	int readfd;
 	int histcount;
 } info_t;
 
-/* Initialize an instance of info_t*/
 #define INFO_INIT \
 {NULL, NULL, NULL, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, \
 	0, 0, 0}
 
 /**
- * Define a structure for built-in commands
+ * Struct for a builtin command and its related function.
  */
 typedef struct builtin
 {
-	char *type;     // The built-in command string
-	int (*func)(info_t *); // Pointer to the corresponding function
+	char *type;
+	int (*func)(info_t *);
 } builtin_table;
 
-/* Function prototypes for various parts of the shell */
-
+/* Function prototypes for different parts of the shell */
 /* toem_shloop.c */
 int hsh(info_t *, char **);
 int find_builtin(info_t *);
@@ -159,7 +158,7 @@ int _myhelp(info_t *);
 int _myhistory(info_t *);
 int _myalias(info_t *);
 
-/* toem_getline.c */
+/*toem_getline.c */
 ssize_t get_input(info_t *);
 int _getline(info_t *, char **, size_t *);
 void sigintHandler(int);
