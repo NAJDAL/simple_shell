@@ -1,0 +1,34 @@
+.TH simple_shell 1 "20 Oct 2023" "0.1" "Simple Shell User Manual"
+
+.SH NAME
+simple_shell - A Unix-like shell written in C for interacting with Linux operating systems.
+
+.SH SYNOPSIS
+.B simple_shell
+[\fIOPTIONS\fP] [\fIFILE\fP]
+
+.SH DESCRIPTION
+A shell, in Unix terminology, serves as an interactive user interface with the underlying operating system. It is responsible for interpreting and executing user-entered commands. Some systems refer to it as a command interpreter. A shell provides a command syntax interface to interact with the operating system.
+
+.B Overview
+The simple_shell is a command-line interpreter that reads and executes commands provided by the user, either from a file or interactively through the terminal. It is typically the program that initiates when a user logs into the system. The simple_shell offers various features to facilitate interactive use and allows users to leverage its interpretative language for both interactive sessions and shell scripts. This means that users can directly type commands into the running simple_shell or place them in a script file for execution.
+
+.SH RETURN VALUE
+The simple_shell returns exit status codes as follows:
+- 0: Success
+- Non-zero: Indicates failure
+
+.SH PATH
+The simple_shell searches for executable commands in directories listed in the PATH environment variable.
+
+.SH OPTIONS
+Command options should be provided after the main \fBsimple_shell\fP command, separated by a space and a hyphen (\fB-\fP).
+
+.SH EXAMPLE
+Usage examples for executing a command with options:
+
+.SH BUGS
+Please ensure that you include a single space after each command option to avoid parsing issues.
+
+.SH AUTHOR
+This version of simple_shell was authored by Najd Aleid.
